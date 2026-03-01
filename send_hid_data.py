@@ -21,10 +21,11 @@ def get_raw_hid_interface():
     if len(raw_hid_interfaces) == 0:
         return None
 
-    interface = hid.Device(path=raw_hid_interfaces[0]['path'])
+    interface = hid.device()
+    interface.open_path(raw_hid_interfaces[0]['path'])
 
-    print(f"Manufacturer: {interface.manufacturer}")
-    print(f"Product: {interface.product}")
+    #print(f"Manufacturer: {interface.get_manufacturer_string()}")
+    #print(f"Product: {interface.get_product_string()}")
 
     return interface
 
@@ -40,9 +41,11 @@ def get_system_data():
     
         # Filter for temperature sensors
         temps = [(sensor.Value, sensor.Name) for sensor in sensors if sensor.SensorType  == "Temperature"]
-        print(temps)
-        cpu_temp = int([(sensor.Value, sensor.Name) for sensor in sensors if sensor.Name == "CPU Package"][1][0])
-        gpu_temp = int([(sensor.Value, sensor.Name) for sensor in sensors if sensor.Name == "GPU Core"][1][0])
+        #print(temps)
+        cpu_temp = int([(sensor.Value, sensor.Name) for sensor in sensors if sensor.Name == "CPU Core"][0][0])
+        #print(cpu_temp)
+        gpu_temp = int([(sensor.Value, sensor.Name) for sensor in sensors if sensor.Name == "GPU Core"][0][0])
+        #print(gpu_temp)
        
         #print(temps)
     except Exception as e:
@@ -64,17 +67,17 @@ def send_raw_report(data):
     request_data = [0x00] * (report_length)  # First byte is Report ID
     request_data[1:len(data) + 1] = data
     request_report = bytes(request_data)
-    print(len(request_report))
-    print("Request:")
-    print(request_report)
+    #print(len(request_report))
+    #print("Request:")
+    #print(request_report)
 
     try:
         interface.write(request_report)
 
-        response_report = interface.read(report_length, timeout=1000)
+        response_report = interface.read(report_length)
 
-        print("Response:")
-        print(response_report)
+        #print("Response:")
+        #print(response_report)
     finally:
         interface.close()
 # -------------------- END OF YOUR ORIGINAL CODE --------------------
@@ -86,6 +89,7 @@ def run_as_service(interval=5):
         try:
             # Your original main logic
             cpu_load, cpu_temp, gpu_temp = get_system_data()
+
             print(f"CPU Load: {cpu_load}% | CPU Temp: {cpu_temp}°C | GPU Temp: {gpu_temp}°C")
             
             formatted_data = f"{cpu_load}%|{cpu_temp}C|{gpu_temp}C"
